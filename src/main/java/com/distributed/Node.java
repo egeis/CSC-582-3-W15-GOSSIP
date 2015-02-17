@@ -30,24 +30,30 @@ public class Node {
     private static ConcurrentHashMap<String, Node.Values> data = new ConcurrentHashMap(16, 0.9f, 1);
     private static Logger LOGGER;        
     
-    private ServerSocket server;
-    private ObjectInputStream input;
+    private static ServerSocket server;
+    private static ObjectInputStream input;
     private ObjectOutputStream output;
     private boolean shutdown = false;
     
     public static Integer parent = null;
     private Integer id = null;
-    private int port = -1;
+    private static int port = -1;
     private String host = "";
     private Boolean isInit = false;
     
-    private static final Map<Integer,Conn.Child> children = new HashMap();
+    //private static final Map<Integer,Conn.Child> children = new HashMap();
     
-    private static final Map<Integer,Boolean> incoming = new HashMap();
-    private static final Map<Integer,Boolean> outgoing = new HashMap();
+    //private static final Map<Integer,Boolean> incoming = new HashMap();
+    //private static final Map<Integer,Boolean> outgoing = new HashMap();
     
     public static String TIMER_HOST = "localhost";
     public static int TIMER_PORT = 1212;
+    
+    private static int k = 0;
+    private static int Mn = 0;
+    private static int N = 0;
+    
+    private static int[] neighbors;
             
     private Node(Integer id, String host, int port)
     {        
@@ -75,9 +81,9 @@ public class Node {
         return time;
     }
     
-    private void parsePacket(Packet p)
+    private static void parsePacket(Packet p)
     {        
-        Packet send;
+        //Packet send;
         
         LOGGER.info("Recieved from node_"+p.id+" Packet:"+p.toString());
         
@@ -90,21 +96,26 @@ public class Node {
                 break;
             case PacketHelper.SET_START:
                 
-                //Start Generating Random Updates!
+                start();
                 
                 break;
 //            case PacketHelper.INIT_INITIATOR:
 //                isInit = true;
 //                break;
             case PacketHelper.INIT_SHUTDOWN:
-                LOGGER.info(incoming.toString()+System.getProperty("line.separator")+outgoing.toString());
-                shutdown = true;
-                break;
+                //LOGGER.info(incoming.toString()+System.getProperty("line.separator")+outgoing.toString());
+                //shutdown = true;
+                //break;
             default:
         }
     }
     
-    private void AcceptMessages()
+    private static void start()
+    {
+        
+    }
+    
+    private static Packet acceptMessage()
     {
         try {
             server = new ServerSocket(port);
@@ -112,30 +123,24 @@ public class Node {
             LOGGER.log(Level.SEVERE, null, ex);
         }
         
-        while(true)
-        {
-            Packet p = null;
+        Packet p = null;
             
-            try (Socket socket = server.accept()) {
-                input = new ObjectInputStream(socket.getInputStream());
-                p = (Packet) input.readObject();
-                input.close();
-                socket.close();
-            } catch (IOException | ClassNotFoundException ex) {
-                Logger.getLogger(Node.class.getName()).log(Level.WARNING, null, ex);
-            } 
-            
-            if(p != null)
-                this.parsePacket(p);
-            
-            if(shutdown) break;
-        }      
+        try (Socket socket = server.accept()) {
+            input = new ObjectInputStream(socket.getInputStream());
+            p = (Packet) input.readObject();
+            input.close();
+            socket.close();
+        } catch (IOException | ClassNotFoundException ex) {
+            Logger.getLogger(Node.class.getName()).log(Level.WARNING, null, ex);
+        }   
         
         try {
             server.close();
         } catch (IOException ex) {
             LOGGER.log(Level.WARNING, null, ex);
         }
+        
+        return p;
     }
     
     /**
@@ -192,13 +197,20 @@ public class Node {
         
         if(args.length > 1 )
         {
+            k = Integer.parseInt(args[0]);
+            Mn = Integer.parseInt(args[1]);
+            N = Integer.parseInt(args[2]);
+            
             /* Setup Port and ID. */
-            String parts[] = args[0].split(":");
+            String parts[] = args[3].split(":");
             id = Integer.parseInt(parts[0]);
             host = parts[1];
             port = Integer.parseInt(parts[2]);
             LOGGER = Logger.getLogger(Node.class.getName()+"_"+id+"_"+host+"-"+port);
-
+            
+            neighbors = new int[args.length - 6];
+            
+            /*
             FileHandler fh;
             try {
                 fh = new FileHandler(System.getProperty("user.dir")+"/logs/"+Node.class.getName()+"_"+id+"_"+host+"-"+port+".log");
@@ -210,11 +222,11 @@ public class Node {
             } catch (SecurityException ex) {
                 Logger.getLogger(Node.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
             }
-            
+*/            
             LOGGER.info("Starting...");
             
             /* Get Adjacent List */
-            for(int i = 1; i < args.length; i++)
+/*            for(int i = 1; i < args.length; i++)
             {
                 parts = args[i].split(":");
                                 
@@ -226,10 +238,11 @@ public class Node {
                 incoming.put(Integer.parseInt(parts[0]), false);
                 outgoing.put(Integer.parseInt(parts[0]), false);
             }
-            
+*/            
             /* Create New Node */
-            Node node = new Node(id, host, port);
-            node.AcceptMessages();
+            //Node node = new Node(id, host, port);
+
+            parsePacket(acceptMessage());
         } 
         else 
         {
