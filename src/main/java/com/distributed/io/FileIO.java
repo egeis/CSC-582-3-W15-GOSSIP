@@ -1,6 +1,5 @@
 package main.java.com.distributed.io;
 
-import main.java.com.Job;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -8,7 +7,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,12 +18,13 @@ public class FileIO {
    
     /**
      * Writes a file from the contents.
+     * @param filename to be written to.
      * @param contents of file to be written.
      */
-    public static void WriteFile(String contents)
+    public static void WriteFile(String filename, String contents)
     {
         try {
-            Files.write(Paths.get("./results.txt"), contents.getBytes());
+            Files.write(Paths.get("./"+filename+".txt"), contents.getBytes());
         } catch(IOException ex) {
             Logger.getLogger(FileIO.class.getName()).log(Level.SEVERE, null, ex);
         }
