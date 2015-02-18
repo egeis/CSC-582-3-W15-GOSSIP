@@ -2,13 +2,15 @@ package main.java.com.distributed;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLDecoder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,7 +31,12 @@ public class Launcher {
     private static Process counterServer;
     private static int counterServerPort = 1212;
     private static Map<Integer, Conn> network = new HashMap<Integer, Conn>();
-    private static Map<Integer, Process> processes = new HashMap();
+    private static Map<Integer, Process> processes = new HashMap();    
+    private static ServerSocket server;
+    private static double seconds;
+    private static int k;
+    private static int min;
+    private static int max;
     
     /**
      * @return the file path to JAR location.
@@ -75,6 +82,10 @@ public class Launcher {
         return success;
     }
     
+    /**
+     * Loads the configuration from the provided file.
+     * @param resource_path_nodes 
+     */
     private static void LoadConfiguration(String resource_path_nodes)
     {
         System.out.println("Loading Nodes Configuration...from: "+resource_path_nodes);
@@ -121,6 +132,9 @@ public class Launcher {
         }
     }
     
+    /**
+     * Starts all the nodes from the provided resource file.
+     */
     private static void StartNodes()
     {        
         for(Map.Entry<Integer, Conn> entry : network.entrySet())
@@ -136,10 +150,15 @@ public class Launcher {
                     sb.append(d.getKey()+":"+child.host+":"+child.port+" ");
                 }
                 
-                Process node = Runtime.getRuntime().exec("java -cp "+getPath()+" main.java.com.distributed.Node "+sb.toString() );
+                Random random = new Random();
+
+                int m = random.nextInt((max - min) + 1) + min;
+                
+                Process node = Runtime.getRuntime().exec("java -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString() );
                 processes.put(c.id, node);
             } catch (IOException ex) {
                 Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);
+                processes.remove(c.id);
             } 
         }
         
@@ -150,12 +169,11 @@ public class Launcher {
             Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        //Send the Start Command
+        /*Send the Start Command*/
         for(Map.Entry<Integer, Conn> entry : network.entrySet())
         {
             Conn c = entry.getValue();
             Socket socket;
-            
             
             try {
                 socket = new Socket(c.host, c.port);
@@ -171,16 +189,56 @@ public class Launcher {
         } 
     }
     
+    /**
+     * Shutsdown all the nodes on the process list.
+     */
     private static void ShutdownNodes()
     {
-        
+        /*Send the Start Command*/
+        for(Map.Entry<Integer, Conn> entry : network.entrySet())
+        {
+            Conn c = entry.getValue();
+            Socket socket;
+            
+            try {
+                socket = new Socket(c.host, c.port);
+                ObjectOutputStream os = new ObjectOutputStream(socket.getOutputStream()); 
+                Packet p = PacketHelper.getPacket(PacketHelper.SET_START, -1);
+                os.writeObject(p);
+                os.flush();
+                os.close();
+                socket.close();
+            } catch (IOException ex) {
+                Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, c.host+":"+c.port, ex);
+            }
+        }
     }
     
     private static void WaitForTermination()
     {
-        while(true)
+        int completed = 0;
+        Packet p = null;
+        
+        while(completed < network.size())
         {
-            //???
+            try (Socket socket = server.accept()) {
+                ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
+                p = (Packet) input.readObject();
+                input.close();
+                socket.close();
+            } catch (IOException ex) {
+                Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (ClassNotFoundException ex) {
+                Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            if(p != null)
+            {
+                if(p.type == PacketHelper.NODE_COMPLETE)
+                {
+                    completed++;
+                }
+            }
         }
     }
     
@@ -191,20 +249,64 @@ public class Launcher {
     
     public static void main(String[] args)
     {
-        /* Handle Arguments First */
-        String resource_path_nodes = "main/resources/nodes.json";    //Default
+        /* Set Defaults */
+        String resource_path_nodes = "main/resources/nodes.json";
+        seconds = 0.5;
+        k = 10;
+        min = 10;
+        max = 30;
+        counterServerPort = 1212;
         
-        if(args.length > 0 && args.length < 3)
+        /* Handle Arguments First */
+        if(args.length > 0 && args.length < 7)
         {
             counterServerPort = Integer.parseInt(args[1]);
             resource_path_nodes = args[0];
-        } else if(args.length > 0 && args.length < 2)  {
+            seconds = Double.parseDouble(args[2]);
+            k = Integer.parseInt(args[3]);
+            min = Integer.parseInt(args[4]);
+            max = Integer.parseInt(args[5]);
+        }
+        else if(args.length > 0 && args.length < 3)
+        {
+            counterServerPort = Integer.parseInt(args[1]);
             resource_path_nodes = args[0];
-        } 
+
+        }
+        else if(args.length > 0 && args.length < 2)
+        {
+            resource_path_nodes = args[0];
+        }
+                
+        try {
+            server = new ServerSocket(1211);
+        } catch (IOException ex) {
+            Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
+        /* Starting the Counter (incrementer) Server */ 
+        Process CounterServer;
+        try {
+            System.out.println("Starting Counter Server");
+            CounterServer = Runtime.getRuntime().exec("java -cp "+getPath()+" main.java.com.distributed " + counterServerPort);
+            boolean started = CounterServer.isAlive();
+            
+            if(started) {
+                System.out.println("Counter Server Started:"+started);
+            } else {
+                System.out.println("Counter Server Started:"+started);
+                System.out.println("Unable to contine...");
+                System.exit(1);
+            }
+            
+        } catch (IOException ex) {
+            Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);        
+        } 
+               
         LoadConfiguration(resource_path_nodes);
         StartNodes();
         WaitForTermination();
-        PrintResults();
+//        PrintResults();
+        ShutdownNodes();
     }
 }
