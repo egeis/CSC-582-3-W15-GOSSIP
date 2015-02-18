@@ -62,7 +62,7 @@ public class Node {
     
     private static int[] neighbors;
             
-    private Node(Integer id, String host, int port)
+    public Node(Integer id, String host, int port)
     {        
         this.id = id;
         this.host = host;
@@ -157,46 +157,18 @@ public class Node {
      * @param the type of send, 0 for parent, 1 for children (excluding parent)
      * 2 for all.
      */
-/*    private void sendPacket(Packet p, int type)
+    private static void sendPacket(String key, Values value)
     {        
-        try {
-            for(Map.Entry<Integer,Conn.Child> entry : children.entrySet()) 
-            {
-                Conn.Child c = entry.getValue();
-                Integer key = entry.getKey();
-                
-                if(type == 0)           //Only Parent;
-                {
-                    if(!Objects.equals(parent, key)) {
-                        //LOGGER.info("Skipping key:"+key);
-                        continue;
-                    }
-                }
-                else if (type == 1)     //Only Children;
-                {
-                    if(Objects.equals(key, parent)) {
-                        //LOGGER.info("Skipping key:"+key);
-                        continue;
-                    }
-                }
-                
-                
-                LOGGER.info("Sending:"+"node_"+key+":"+c.host+":"+c.port+"---"+p.toString());
-                
-                //outgoing.replace(key, true);
-                
-                Socket socket = new Socket(c.host, c.port);    
-                output = new ObjectOutputStream(socket.getOutputStream()); 
-                output.writeObject(p);
-                output.flush();
-                output.close();
-                socket.close();
-            }
+        try 
+        {
+            Packet p = PacketHelper.getPacket(PacketHelper.MESSAGE, value);
+            
+            
         } catch (IOException ex) {
            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
         }
     }
-*/    
+    
     public static long getTime()
     {
         DataOutputStream output;
@@ -233,7 +205,7 @@ public class Node {
         {
             v.COUNT = 0;
             v.TIME = value.TIME;
-            
+            v.VALUE = value.VALUE;
         }
     }
     
@@ -260,6 +232,8 @@ public class Node {
             LOGGER.info("Starting...");
             
             parsePacket(acceptMessage());
+            
+            
             
             /*
             FileHandler fh;
@@ -294,6 +268,22 @@ public class Node {
         } 
         else 
         {
+/*            Values v1 = new Values(1L, 10);
+            Values v2 = new Values(2L, 20);
+            Values v3 = new Values(3L, 30);
+            
+            data.put("A", v1);
+            data.put("B", v2);
+            data.put("C", v3);
+           
+            Values v = data.get("A");
+            System.out.println(v.VALUE);
+            
+            v.VALUE = 5000;
+            
+            Values va = data.get("A");
+            System.out.println(va.VALUE);
+*/                    
             System.exit(1);     //Something Went Wrong...
         }
         
@@ -317,6 +307,40 @@ public class Node {
         public String toString() {
             return "Values{" + "TIME=" + TIME + ", VALUE=" + VALUE + ", COUNT=" + COUNT + "}";
         }        
+    }
+    
+    public static class Sender implements Runnable
+    {
+        public void run()
+        {
+            try 
+            {
+                while(true)
+                {
+                    Thread.sleep(3000);
+
+                    Set s = updateQueue.keySet();
+                    Object[] keys = s.toArray();
+                    
+                    if(keys.length == 0)
+                        break;
+                    
+                    for (int i = 0; i < keys.length; i++)
+                    {
+                        Values v = updateQueue.get(keys[i]);
+                        sendPacket(keys[i], v);
+                        v.COUNT++;
+                        
+                        if (v.COUNT == k)
+                        {
+                            updateQueue.remove(keys[i]);
+                        }
+                    }
+                }
+            } catch (InterruptedException ex) {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            }            
+        }
     }
     
     public static class Updater implements Runnable

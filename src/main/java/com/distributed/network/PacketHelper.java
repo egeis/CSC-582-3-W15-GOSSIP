@@ -1,6 +1,6 @@
 package main.java.com.distributed.network;
 
-import java.util.Map.Entry;
+import main.java.com.distributed.Node;
 
 /**
  * Creates the Packet Object to send across nodes.
@@ -21,12 +21,11 @@ public class PacketHelper {
      * @param entry to be updated
      * @return 
      */
-    public static Packet getPacket(int type, Integer id, Entry entry)
+    public static Packet getPacket(int type, Node.Values value)
     {
         Packet p = new Packet();
         p.type = type;
-        p.id = id;
-        p.entry = entry;
+        p.value = value;
         return p;
     }
     
@@ -36,11 +35,10 @@ public class PacketHelper {
      * @param id of node.
      * @return 
      */
-    public static Packet getPacket(int type, Integer id)
+    public static Packet getPacket(int type)
     {
         Packet p = new Packet();
         p.type = type;
-        p.id = id;
         return p;
     }
     

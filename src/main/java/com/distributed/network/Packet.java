@@ -1,16 +1,15 @@
 package main.java.com.distributed.network;
 
 import java.io.Serializable;
-import java.util.Map.Entry;
+import main.java.com.distributed.Node;
 
 public class Packet implements Serializable {
     public int type = 0;
-    public Integer id = null;
-    public Entry entry = null;    
+    public Node.Values value = null;    
     
     @Override
     public String toString()
     {
-        return "[Type:"+type+" Id:"+id+" Entry:["+entry.toString()+"]]";
+        return "[Type:"+type+" Value:["+value.toString()+"]]";
     }    
 }
