@@ -5,6 +5,8 @@
  */
 package main.java.com.distributed;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -13,6 +15,9 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -28,6 +33,8 @@ import main.java.com.distributed.network.PacketHelper;
  */
 public class Node {
     private static ConcurrentHashMap<String, Node.Values> data = new ConcurrentHashMap(16, 0.9f, 1);
+    private static ConcurrentHashMap<String, Node.Values> updateQueue = new ConcurrentHashMap(16, 0.9f, 1);
+    
     private static Logger LOGGER;        
     
     private static ServerSocket server;
@@ -112,7 +119,8 @@ public class Node {
     
     private static void start()
     {
-        
+        Thread t = new Thread(new Updater());
+        t.start();
     }
     
     private static Packet acceptMessage()
@@ -149,7 +157,7 @@ public class Node {
      * @param the type of send, 0 for parent, 1 for children (excluding parent)
      * 2 for all.
      */
-    private void sendPacket(Packet p, int type)
+/*    private void sendPacket(Packet p, int type)
     {        
         try {
             for(Map.Entry<Integer,Conn.Child> entry : children.entrySet()) 
@@ -175,7 +183,7 @@ public class Node {
                 
                 LOGGER.info("Sending:"+"node_"+key+":"+c.host+":"+c.port+"---"+p.toString());
                 
-                outgoing.replace(key, true);
+                //outgoing.replace(key, true);
                 
                 Socket socket = new Socket(c.host, c.port);    
                 output = new ObjectOutputStream(socket.getOutputStream()); 
@@ -186,6 +194,46 @@ public class Node {
             }
         } catch (IOException ex) {
            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+        }
+    }
+*/    
+    public static long getTime()
+    {
+        DataOutputStream output;
+        DataInputStream input;
+        long time = 0L;
+        
+        try
+        {
+            Socket socket = new Socket("localhost", 1212);
+            output = new DataOutputStream(socket.getOutputStream());
+            output.writeInt(1);
+            output.flush();
+            input = new DataInputStream(socket.getInputStream());
+            time = input.readLong();
+            socket.close();
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+        }
+        
+        return time;
+    }
+    
+    public static void addToUpdateQueue(String key, Values value)
+    {
+        Values v = updateQueue.get(key);
+        
+        if (v == null)
+        {
+            value.COUNT = 0;
+            updateQueue.put(key, value);
+        }
+        
+        else
+        {
+            v.COUNT = 0;
+            v.TIME = value.TIME;
+            
         }
     }
     
@@ -209,6 +257,9 @@ public class Node {
             LOGGER = Logger.getLogger(Node.class.getName()+"_"+id+"_"+host+"-"+port);
             
             neighbors = new int[args.length - 6];
+            LOGGER.info("Starting...");
+            
+            parsePacket(acceptMessage());
             
             /*
             FileHandler fh;
@@ -223,7 +274,6 @@ public class Node {
                 Logger.getLogger(Node.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
             }
 */            
-            LOGGER.info("Starting...");
             
             /* Get Adjacent List */
 /*            for(int i = 1; i < args.length; i++)
@@ -241,8 +291,6 @@ public class Node {
 */            
             /* Create New Node */
             //Node node = new Node(id, host, port);
-
-            parsePacket(acceptMessage());
         } 
         else 
         {
@@ -256,16 +304,53 @@ public class Node {
     public static class Values {
         public long TIME;
         public Integer VALUE;
+        public Integer COUNT;
         
-        public void Values(long time, Integer value)
+        public Values(long time, Integer value)
         {
             this.TIME = time;
             this.VALUE = value;
+            COUNT = 0;
         }
 
         @Override
         public String toString() {
-            return "Values{" + "TIME=" + TIME + ", VALUE=" + VALUE + '}';
+            return "Values{" + "TIME=" + TIME + ", VALUE=" + VALUE + ", COUNT=" + COUNT + "}";
         }        
+    }
+    
+    public static class Updater implements Runnable
+    {
+        public void run()
+        {
+            for (int i = 0; i < Mn; i++)
+            {
+                Timer timer = new Timer();
+                timer.schedule(new UpdateTask(), N * 1000);
+            }
+            
+            System.exit(0);
+        }
+    }
+    
+    public static class UpdateTask extends TimerTask
+    {
+        public void run()
+        {
+            Set s = data.keySet();
+            Object[] keys = s.toArray();
+            
+            int randomIndex = (int)(Math.random() * (keys.length - 1));
+            
+            Values v = data.get(keys[randomIndex]);
+            v.TIME = getTime();
+            v.VALUE = (int)(Math.random() * 1000);
+            
+            data.replace(keys[randomIndex].toString(), v);
+            
+            addToUpdateQueue(keys[randomIndex].toString(), v);
+            
+            System.exit(0);
+        }
     }
 }
