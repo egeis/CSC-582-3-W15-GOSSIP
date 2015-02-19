@@ -178,7 +178,8 @@ public class Launcher {
             try {
                 socket = new Socket(c.host, c.port);
                 ObjectOutputStream os = new ObjectOutputStream(socket.getOutputStream()); 
-                Packet p = PacketHelper.getPacket(PacketHelper.SET_START, -1, null);
+                //Packet p = PacketHelper.getPacket(PacketHelper.SET_START, -1, null);
+                Packet p = PacketHelper.getPacket(PacketHelper.SET_START);
                 os.writeObject(p);
                 os.flush();
                 os.close();
@@ -203,7 +204,8 @@ public class Launcher {
             try {
                 socket = new Socket(c.host, c.port);
                 ObjectOutputStream os = new ObjectOutputStream(socket.getOutputStream()); 
-                Packet p = PacketHelper.getPacket(PacketHelper.INIT_SHUTDOWN, -1, null);
+                //Packet p = PacketHelper.getPacket(PacketHelper.INIT_SHUTDOWN, -1, null);
+                Packet p = PacketHelper.getPacket(PacketHelper.INIT_SHUTDOWN);
                 os.writeObject(p);
                 os.flush();
                 os.close();

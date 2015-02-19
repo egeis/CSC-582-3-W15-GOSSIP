@@ -21,10 +21,12 @@ public class PacketHelper {
      * @param value
      * @return 
      */
-    public static Packet getPacket(int type, int id, Node.Values value)
+    public static Packet getPacket(int type, int id, String key, Node.Values value)
     {
         Packet p = new Packet();
         p.type = type;
+        p.id = id;
+        p.key = key;
         p.value = value;
         return p;
     }

@@ -53,11 +53,13 @@ public class Node {
     private static int Mn = 0;
     private static int N = 0;
     
+    private static Thread updateThread = null;
+    private static Thread sendThread = null;
     /**
      * Requests the next counter from a global counter server.
      * @return a unique number [LONG].
      */
-    private long RequestUpdateTime()
+    private static long getTime()
     {
         long time = 0;
         try ( 
@@ -78,19 +80,30 @@ public class Node {
 
     private static void parsePacket(Packet p)
     {                
-        LOGGER.info("Recieved from node_"+p.id+" Packet:"+p.toString());
+        LOGGER.info("Received from node_"+p.id+" Packet:"+p.toString());
         
         switch(p.type) 
         {
             case PacketHelper.MESSAGE:
+                Values v = data.get(p.key);
                 
-                //DO STUFF
+                if (v == null)
+                {
+                    data.put(p.key, p.value);
+                    addToUpdateQueue(p.key, p.value);
+                }
                 
+                else
+                {
+                    if (p.value.TIME > v.TIME)
+                    {
+                        v.VALUE = p.value.VALUE;
+                        addToUpdateQueue(p.key, v);
+                    }
+                }
                 break;
             case PacketHelper.SET_START:
-                
                 start();
-                
                 break;
             case PacketHelper.INIT_SHUTDOWN:
                 shutdown = true;
@@ -101,8 +114,11 @@ public class Node {
     
     private static void start()
     {
-        Thread t = new Thread(new Updater());
-        t.start();
+        updateThread = new Thread(new Updater());
+        updateThread.start();
+        
+        sendThread = new Thread(new Sender());
+        sendThread.start();
     }
     
     private static Packet acceptMessage()
@@ -133,45 +149,54 @@ public class Node {
         return p;
     }
 
+    private static void sendCompletedMessage()
+    {
+        Socket socket;
+        
+        try {
+            socket = new Socket("localhost", 1211);
+            ObjectOutputStream os = new ObjectOutputStream(socket.getOutputStream()); 
+            Packet p = PacketHelper.getPacket(PacketHelper.NODE_COMPLETE);
+            
+            os.writeObject(p);
+            os.flush();
+            os.close();
+            socket.close();
+        } catch (IOException ex) {
+            Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, "localhost"+":"+1211, ex);
+        }
+    }
+    
     /**
      * Sends a packet into the great unknown where it will meet an unknown fate
      * in this cruel digital world.
      * @param value 
      */
-    private static void sendPacket(Values value)
+    private static void sendPacket(String key, Values value)
     {        
-        Packet p = PacketHelper.getPacket(PacketHelper.MESSAGE, id, value);
+        Packet p = PacketHelper.getPacket(PacketHelper.MESSAGE, id, key, value);
         
-//        try 
-//        {
-//            
-//        } catch (IOException ex) {
-//           LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-//        }
-    }
-    
-    public static long getTime()
-    {
-        DataOutputStream output;
-        DataInputStream input;
-        long time = 0L;
-        
-        try
-        {
-            Socket socket = new Socket("localhost", 1212);
-            output = new DataOutputStream(socket.getOutputStream());
-            output.writeInt(1);
-            output.flush();
-            input = new DataInputStream(socket.getInputStream());
-            time = input.readLong();
+        Set s = adjacent.keySet();
+        Object[] keys = s.toArray();
+            
+        int randomIndex = (int)(Math.random() * (keys.length - 1));
+            
+        Conn.Child ch = adjacent.get(keys[randomIndex]);
+        Socket socket;
+            
+        try {
+            socket = new Socket(ch.host, ch.port);
+            ObjectOutputStream os = new ObjectOutputStream(socket.getOutputStream()); 
+            
+            os.writeObject(p);
+            os.flush();
+            os.close();
             socket.close();
         } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, ch.host+":"+ch.port, ex);
         }
-        
-        return time;
     }
-    
+
     public static void addToUpdateQueue(String key, Values value)
     {
         Values v = updateQueue.get(key);
@@ -187,6 +212,20 @@ public class Node {
             v.COUNT = 0;
             v.TIME = value.TIME;
             v.VALUE = value.VALUE;
+        }
+    }
+    
+    public static void waitForThreads()
+    {
+        int count = 0;
+        
+        while(count < 2)
+        {
+            if(!updateThread.isAlive())
+                count++;
+            
+            if(!sendThread.isAlive())
+                count++;
         }
     }
     
@@ -209,33 +248,19 @@ public class Node {
             port = Integer.parseInt(parts[2]);
                                    
             /* Get Adjacent List */
-            for(int i = 1; i < args.length; i++)
+            for(int i = 4; i < args.length; i++)
             {
                 parts = args[i].split(":");
                                 
                 Conn.Child c = new Conn.Child();
+                c.id = Integer.parseInt(parts[0]);
                 c.host = parts[1];
                 c.port = Integer.parseInt(parts[2]);
-                adjacent.put(Integer.parseInt(args[0]), c); //Adjacent Nodes...
+                adjacent.put(c.id, c); //Adjacent Nodes...
             }
         }
         else 
         {
-//            Values v1 = new Values(1L, 10);
-//            Values v2 = new Values(2L, 20);
-//            Values v3 = new Values(3L, 30);
-//            
-//            data.put("A", v1);
-//            data.put("B", v2);
-//            data.put("C", v3);
-//           
-//            Values v = data.get("A");
-//            System.out.println(v.VALUE);
-//            
-//            v.VALUE = 5000;
-//            
-//            Values va = data.get("A");
-//            System.out.println(va.VALUE);
             System.exit(1);     //Something Went Wrong...
         }    
            
@@ -258,6 +283,8 @@ public class Node {
             parsePacket(acceptMessage());
         }
 
+        waitForThreads();
+        sendCompletedMessage();
         
         System.exit(0);
     }
@@ -288,7 +315,7 @@ public class Node {
             {
                 while(true)
                 {
-                    Thread.sleep(3000);
+                    Thread.sleep(2000);
 
                     Set s = updateQueue.keySet();
                     Object[] keys = s.toArray();
@@ -299,8 +326,8 @@ public class Node {
                     for (int i = 0; i < keys.length; i++)
                     {
                         Values v = updateQueue.get(keys[i]);
-                        sendPacket(v);
                         v.COUNT++;
+                        sendPacket(keys[i].toString(), v);
                         
                         if (v.COUNT == k)
                         {
@@ -308,6 +335,8 @@ public class Node {
                         }
                     }
                 }
+                
+                System.exit(0);
             } catch (InterruptedException ex) {
                 LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
             }            
