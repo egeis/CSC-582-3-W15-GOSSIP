@@ -33,7 +33,7 @@ public class Launcher {
     private static Map<Integer, Conn> network = new HashMap<Integer, Conn>();
     private static Map<Integer, Process> processes = new HashMap();    
     private static ServerSocket server;
-    private static double seconds;
+    private static int seconds;
     private static int k;
     private static int min;
     private static int max;
@@ -156,7 +156,7 @@ public class Launcher {
 
                 int m = random.nextInt((max - min) + 1) + min;
                 
-                System.out.println("java -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString());
+                //System.out.println("java -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString());
                 
                 Process node = Runtime.getRuntime().exec("java -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString() );
                 
@@ -169,7 +169,7 @@ public class Launcher {
         
         /* Pause to allow slower Processes time to start. */
         try {
-            Thread.sleep(500);
+            Thread.sleep(1000);
         } catch (InterruptedException ex) {
             Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -246,6 +246,8 @@ public class Launcher {
             {
                 if(p.type == PacketHelper.NODE_COMPLETE)
                 {
+                    System.out.println(p.toString());
+                    
                     completed++;
                 }
             }
@@ -261,7 +263,7 @@ public class Launcher {
     {
         /* Set Defaults */
         String resource_path_nodes = "main/resources/nodes.json";
-        seconds = 0.5;
+        seconds = 1;
         k = 10;
         min = 10;
         max = 30;
@@ -272,7 +274,7 @@ public class Launcher {
         {
             counterServerPort = Integer.parseInt(args[1]);
             resource_path_nodes = args[0];
-            seconds = Double.parseDouble(args[2]);
+            seconds = Integer.parseInt(args[2]);
             k = Integer.parseInt(args[3]);
             min = Integer.parseInt(args[4]);
             max = Integer.parseInt(args[5]);

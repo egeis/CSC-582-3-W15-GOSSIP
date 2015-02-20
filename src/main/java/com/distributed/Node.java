@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -119,13 +120,7 @@ public class Node {
     }
     
     private static Packet acceptMessage()
-    {
-        try {
-            server = new ServerSocket(port);
-        } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, null, ex);
-        }
-        
+    {        
         Packet p = null;
             
         try (Socket socket = server.accept()) {
@@ -153,7 +148,7 @@ public class Node {
         try {
             socket = new Socket("localhost", 1211);
             ObjectOutputStream os = new ObjectOutputStream(socket.getOutputStream()); 
-            Packet p = PacketHelper.getPacket(PacketHelper.NODE_COMPLETE);
+            Packet p = PacketHelper.getPacket(PacketHelper.NODE_COMPLETE, id, "", null);
             
             os.writeObject(p);
             os.flush();
@@ -228,14 +223,13 @@ public class Node {
     
     public static void loadFile(String contents)
     {
-        String[] records = contents.split("\n");
-        
+        String[] records = contents.split(System.getProperty("line.separator"));
+
         for(int i = 0; i < records.length; i++)
         {
             String[] keyValue = records[i].split(",");
-            System.out.println("this is it:" + keyValue[1].toString());
-            //Values v = new Values(0L, Integer.parseInt(keyValue[1]));
-            //data.put(keyValue[0], v);
+            Values v = new Values(0L, Integer.parseInt(keyValue[1]));
+            data.put(keyValue[0], v);       
         }
     }
     
@@ -281,19 +275,25 @@ public class Node {
            
         LOGGER = Logger.getLogger(Node.class.getName()+"_"+id+"_"+host+"-"+port);
         
-        // LOG FILES MUST BE UNIQUE PER NODE INSTANCE 
-        FileHandler fh;
-        try {
-            fh = new FileHandler(System.getProperty("user.dir")+"/logs/"+Node.class.getName()+"_"+id+"_"+host+"-"+port+".log");
-            LOGGER.addHandler(fh);
-            SimpleFormatter frmt = new SimpleFormatter();
-            fh.setFormatter(frmt);
-        } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-        } catch (SecurityException ex) {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-        }
+//        // LOG FILES MUST BE UNIQUE PER NODE INSTANCE 
+//        FileHandler fh;
+//        try {
+//            fh = new FileHandler(Node.class.getName()+"_"+id+"_"+host+"-"+port+".log");
+//            LOGGER.addHandler(fh);
+//            SimpleFormatter frmt = new SimpleFormatter();
+//            fh.setFormatter(frmt);
+//        } catch (IOException ex) {
+//            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+//        } catch (SecurityException ex) {
+//            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+//        }
             
+        try {
+            server = new ServerSocket(port);
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, null, ex);
+        }
+        
         while(!shutdown) {
             parsePacket(acceptMessage());
         }
