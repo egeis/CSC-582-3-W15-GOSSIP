@@ -98,7 +98,7 @@ public class Launcher {
         JsonArray results = obj.getJsonArray("nodes");
         
         Map<Integer, Integer[]> adjacent = new HashMap<Integer, Integer[]>();
-        
+                
         for (JsonObject result : results.getValuesAs(JsonObject.class)) {
             Conn c = new Conn();
             c.host = result.getString("host");
@@ -130,6 +130,8 @@ public class Launcher {
                 c.adj.put(ports[i],d);
             }
         }
+        
+        System.out.println(network);
     }
     
     /**
@@ -154,7 +156,10 @@ public class Launcher {
 
                 int m = random.nextInt((max - min) + 1) + min;
                 
+                System.out.println("java -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString());
+                
                 Process node = Runtime.getRuntime().exec("java -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString() );
+                
                 processes.put(c.id, node);
             } catch (IOException ex) {
                 Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);
@@ -176,6 +181,7 @@ public class Launcher {
             Socket socket;
             
             try {
+                System.out.println("Creating Node: "+c.host+":"+c.port);
                 socket = new Socket(c.host, c.port);
                 ObjectOutputStream os = new ObjectOutputStream(socket.getOutputStream()); 
                 //Packet p = PacketHelper.getPacket(PacketHelper.SET_START, -1, null);
@@ -186,6 +192,8 @@ public class Launcher {
                 socket.close();
             } catch (IOException ex) {
                 Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, c.host+":"+c.port, ex);
+                System.out.println(processes.get(c.id).isAlive());
+                System.out.println(processes.get(c.id).exitValue());
             }
         } 
     }

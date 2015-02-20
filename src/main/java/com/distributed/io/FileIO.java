@@ -44,7 +44,7 @@ public class FileIO {
         StringBuilder contents = new StringBuilder();
 
         try {            
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             String text = null;
             
             // repeat until all lines is read
@@ -69,7 +69,7 @@ public class FileIO {
      */
     public static void main(String[] args) {
         /** Loading File Test, using Test Data #3 **/
-        String path = "main/resources/testdata3.txt";
+        String path = "main\\resources\\init_data.txt";
         System.out.println("Reading File: "+path);
         String contents = ReadFile(path);
         System.out.println(contents);

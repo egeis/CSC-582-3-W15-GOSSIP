@@ -1,17 +1,13 @@
 package main.java.com.distributed;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -20,6 +16,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+import main.java.com.distributed.io.FileIO;
 import main.java.com.distributed.network.Conn;
 import main.java.com.distributed.network.Packet;
 import main.java.com.distributed.network.PacketHelper;
@@ -229,25 +226,43 @@ public class Node {
         }
     }
     
+    public static void loadFile(String contents)
+    {
+        String[] records = contents.split("\n");
+        
+        for(int i = 0; i < records.length; i++)
+        {
+            String[] keyValue = records[i].split(",");
+            System.out.println("this is it:" + keyValue[1].toString());
+            //Values v = new Values(0L, Integer.parseInt(keyValue[1]));
+            //data.put(keyValue[0], v);
+        }
+    }
+    
     public static void main(String[] args)
     {
         port = 0;
         id = 0;
         String host = "";
         
-        if(args.length > 1 )
+        String path = "main/resources/init_data.txt";
+        String contents = FileIO.ReadFile(path);
+        
+        loadFile(contents);
+        
+        if(args.length > 1)
         {
             k = Integer.parseInt(args[0]);
             Mn = Integer.parseInt(args[1]);
             N = Integer.parseInt(args[2]);
             
-            /* Setup Port and ID. */
+            // Setup Port and ID. 
             String parts[] = args[3].split(":");
             id = Integer.parseInt(parts[0]);
             host = parts[1];
             port = Integer.parseInt(parts[2]);
                                    
-            /* Get Adjacent List */
+            // Get Adjacent List 
             for(int i = 4; i < args.length; i++)
             {
                 parts = args[i].split(":");
@@ -266,7 +281,7 @@ public class Node {
            
         LOGGER = Logger.getLogger(Node.class.getName()+"_"+id+"_"+host+"-"+port);
         
-        /* LOG FILES MUST BE UNIQUE PER NODE INSTANCE */
+        // LOG FILES MUST BE UNIQUE PER NODE INSTANCE 
         FileHandler fh;
         try {
             fh = new FileHandler(System.getProperty("user.dir")+"/logs/"+Node.class.getName()+"_"+id+"_"+host+"-"+port+".log");
