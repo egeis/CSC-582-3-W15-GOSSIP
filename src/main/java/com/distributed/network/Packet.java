@@ -12,6 +12,6 @@ public class Packet implements Serializable {
     @Override
     public String toString()
     {
-        return "[Type:"+type+" Value:["+value.toString()+"]]";
+        return "[Type:"+type+" Value:["+((value == null)?"":value.toString())+"]]";
     }    
 }

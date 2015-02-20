@@ -1,5 +1,7 @@
 package main.java.com.distributed;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -59,27 +61,31 @@ public class Node {
      */
     private static long getTime()
     {
-        long time = 0;
-        try ( 
-            Socket socket = new Socket(TIMER_HOST, TIMER_PORT)) {
-            output = new ObjectOutputStream(socket.getOutputStream());
-            output.writeInt(1);
-            output.flush();
-            
-            input = new ObjectInputStream(socket.getInputStream());
-            time = input.readInt();
-            socket.close();
-        } catch (IOException ex) {
-            Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
-        }
+//        long time = 0L;
+        LOGGER.info("Getting a new time.");
+                
+//        try { 
+//            Socket socket = new Socket(TIMER_HOST, TIMER_PORT);
+//            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+//            out.writeInt(1);
+//            out.flush();
+//            out.close();
+//            socket.close();
+//            
+//            socket = new Socket(TIMER_HOST, TIMER_PORT);
+//            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+//            time = in.readInt();
+//            in.close();
+//            socket.close();
+//        } catch (IOException ex) {
+//            LOGGER.log(Level.SEVERE, null, ex);
+//        }
         
-        return time;
+        return System.currentTimeMillis();
     }
 
     private static void parsePacket(Packet p)
     {                
-        LOGGER.info("Received from node_"+p.id+" Packet:"+p.toString());
-        
         switch(p.type) 
         {
             case PacketHelper.MESSAGE:
@@ -112,6 +118,7 @@ public class Node {
     
     private static void start()
     {
+        LOGGER.info("Starting Threads.");
         updateThread = new Thread(new Updater());
         updateThread.start();
         
@@ -125,18 +132,18 @@ public class Node {
             
         try (Socket socket = server.accept()) {
             input = new ObjectInputStream(socket.getInputStream());
+            LOGGER.info("Accepting a Packet @"+System.currentTimeMillis());
+            
             p = (Packet) input.readObject();
+            
+            LOGGER.info("Received from node_"+p.id+" Packet:"+p.toString());
+            
             input.close();
             socket.close();
         } catch (IOException | ClassNotFoundException ex) {
-            Logger.getLogger(Node.class.getName()).log(Level.WARNING, null, ex);
-        }   
-        
-        try {
-            server.close();
-        } catch (IOException ex) {
-            LOGGER.log(Level.WARNING, null, ex);
-        }
+            LOGGER.info("Something went wrong, im sorry...");
+            LOGGER.log(Level.SEVERE, null, ex);
+        }          
         
         return p;
     }
@@ -144,6 +151,8 @@ public class Node {
     private static void sendCompletedMessage()
     {
         Socket socket;
+        
+        LOGGER.info("Completed!");
         
         try {
             socket = new Socket("localhost", 1211);
@@ -155,7 +164,7 @@ public class Node {
             os.close();
             socket.close();
         } catch (IOException ex) {
-            Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, "localhost"+":"+1211, ex);
+            LOGGER.log(Level.SEVERE, "localhost"+":"+1211, ex);
         }
     }
     
@@ -182,10 +191,10 @@ public class Node {
             
             os.writeObject(p);
             os.flush();
-            os.close();
+//            os.close();
             socket.close();
         } catch (IOException ex) {
-            Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, ch.host+":"+ch.port, ex);
+            LOGGER.log(Level.SEVERE, ch.host+":"+ch.port, ex);
         }
     }
 
@@ -272,34 +281,42 @@ public class Node {
         {
             System.exit(1);     //Something Went Wrong...
         }    
-           
         LOGGER = Logger.getLogger(Node.class.getName()+"_"+id+"_"+host+"-"+port);
         
-//        // LOG FILES MUST BE UNIQUE PER NODE INSTANCE 
-//        FileHandler fh;
-//        try {
-//            fh = new FileHandler(Node.class.getName()+"_"+id+"_"+host+"-"+port+".log");
-//            LOGGER.addHandler(fh);
-//            SimpleFormatter frmt = new SimpleFormatter();
-//            fh.setFormatter(frmt);
-//        } catch (IOException ex) {
-//            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-//        } catch (SecurityException ex) {
-//            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-//        }
-            
+        // LOG FILES MUST BE UNIQUE PER NODE INSTANCE 
+        FileHandler fh;
+        try {
+            fh = new FileHandler(Node.class.getName()+"_"+id+"_"+host+"-"+port+".log");
+            LOGGER.addHandler(fh);
+            SimpleFormatter frmt = new SimpleFormatter();
+            fh.setFormatter(frmt);
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+        } catch (SecurityException ex) {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+        }
+           
+        LOGGER.info("Starting Server...");
         try {
             server = new ServerSocket(port);
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, null, ex);
         }
         
+        LOGGER.info("Accepting Packets...");
         while(!shutdown) {
             parsePacket(acceptMessage());
         }
 
         waitForThreads();
         sendCompletedMessage();
+        
+        LOGGER.info("Shutting down Server...");
+        try {
+            server.close();
+        } catch (IOException ex) {
+            LOGGER.log(Level.WARNING, null, ex);
+        }
         
         System.exit(0);
     }
@@ -326,11 +343,11 @@ public class Node {
     {
         public void run()
         {
-            try 
-            {
+//            try 
+//            {
                 while(true)
                 {
-                    Thread.sleep(2000);
+//                    Thread.sleep(500);
 
                     Set s = updateQueue.keySet();
                     Object[] keys = s.toArray();
@@ -351,10 +368,10 @@ public class Node {
                     }
                 }
                 
-                System.exit(0);
-            } catch (InterruptedException ex) {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-            }            
+//                System.exit(0);
+//            } catch (InterruptedException ex) {
+//                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+//            }         
         }
     }
     
@@ -368,7 +385,7 @@ public class Node {
                 timer.schedule(new UpdateTask(), N * 1000);
             }
             
-            System.exit(0);
+//            System.exit(0);
         }
     }
     
@@ -389,7 +406,7 @@ public class Node {
             
             addToUpdateQueue(keys[randomIndex].toString(), v);
             
-            System.exit(0);
+//            System.exit(0);
         }
     }
 }

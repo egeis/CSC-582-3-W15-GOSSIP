@@ -35,8 +35,6 @@ public class Launcher {
     private static ServerSocket server;
     private static int seconds;
     private static int k;
-    private static int min;
-    private static int max;
     
     /**
      * @return the file path to JAR location.
@@ -70,8 +68,7 @@ public class Launcher {
 
         try {
             System.out.print("Starting Counter Server");
-            String path = getPath();
-            if(path == null) counterServer = Runtime.getRuntime().exec("java -cp "+path+" main.java.com.distributed " + counterServerPort);
+            counterServer = Runtime.getRuntime().exec("java -cp "+getPath()+" main.java.com.distributed.CounterServer " + counterServerPort);            
             success = counterServer.isAlive();
             System.out.println("..."+((success)?"success":"failed"));
         } catch (IOException ex) {
@@ -154,10 +151,8 @@ public class Launcher {
                 
                 Random random = new Random();
 
-                int m = random.nextInt((max - min) + 1) + min;
-                
-                //System.out.println("java -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString());
-                
+                int m = 5;
+                                
                 Process node = Runtime.getRuntime().exec("java -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString() );
                 
                 processes.put(c.id, node);
@@ -186,9 +181,12 @@ public class Launcher {
                 ObjectOutputStream os = new ObjectOutputStream(socket.getOutputStream()); 
                 //Packet p = PacketHelper.getPacket(PacketHelper.SET_START, -1, null);
                 Packet p = PacketHelper.getPacket(PacketHelper.SET_START);
+                
+                System.out.println(p.toString());
+                
                 os.writeObject(p);
                 os.flush();
-                os.close();
+                //os.close();
                 socket.close();
             } catch (IOException ex) {
                 Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, c.host+":"+c.port, ex);
@@ -265,57 +263,58 @@ public class Launcher {
         String resource_path_nodes = "main/resources/nodes.json";
         seconds = 1;
         k = 10;
-        min = 10;
-        max = 30;
         counterServerPort = 1212;
         
         /* Handle Arguments First */
-        if(args.length > 0 && args.length < 7)
-        {
-            counterServerPort = Integer.parseInt(args[1]);
-            resource_path_nodes = args[0];
-            seconds = Integer.parseInt(args[2]);
-            k = Integer.parseInt(args[3]);
-            min = Integer.parseInt(args[4]);
-            max = Integer.parseInt(args[5]);
-        }
-        else if(args.length > 0 && args.length < 3)
-        {
-            counterServerPort = Integer.parseInt(args[1]);
-            resource_path_nodes = args[0];
-
-        }
-        else if(args.length > 0 && args.length < 2)
-        {
-            resource_path_nodes = args[0];
-        }
+//        if(args.length > 0 && args.length < 5)
+//        {
+//            counterServerPort = Integer.parseInt(args[1]);
+//            resource_path_nodes = args[0];
+//            seconds = Integer.parseInt(args[2]);
+//            k = Integer.parseInt(args[3]);
+//            min = Integer.parseInt(args[4]);
+//            max = Integer.parseInt(args[5]);
+//        }
+//        else if(args.length > 0 && args.length < 3)
+//        {
+//            counterServerPort = Integer.parseInt(args[1]);
+//            resource_path_nodes = args[0];
+//
+//        }
+//        else if(args.length > 0 && args.length < 2)
+//        {
+//            resource_path_nodes = args[0];
+//        }
                 
         try {
             server = new ServerSocket(1211);
         } catch (IOException ex) {
             Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
         /* Starting the Counter (incrementer) Server */ 
-        Process CounterServer;
-        try {
-            System.out.println("Starting Counter Server");
-            CounterServer = Runtime.getRuntime().exec("java -cp "+getPath()+" main.java.com.distributed " + counterServerPort);
-            boolean started = CounterServer.isAlive();
-            
-            if(started) {
-                System.out.println("Counter Server Started:"+started);
-            } else {
-                System.out.println("Counter Server Started:"+started);
-                System.out.println("Unable to contine...");
-                System.exit(1);
-            }
-            
-        } catch (IOException ex) {
-            Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);        
-        } 
+//        StartCounterServer();
+        
+//        Process CounterServer;
+//        try {
+//            System.out.println("Starting Counter Server");
+//            CounterServer = Runtime.getRuntime().exec("java -cp "+getPath()+" main.java.com.distributed " + counterServerPort);
+//            boolean started = CounterServer.isAlive();
+//            
+//            if(started) {
+//                System.out.println("Counter Server Started:"+started);
+//            } else {
+//                System.out.println("Counter Server Started:"+started);
+//                System.out.println("Unable to contine...");
+//                System.exit(1);
+//            }
+//            
+//        } catch (IOException ex) {
+//            Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);        
+//        } 
                
         LoadConfiguration(resource_path_nodes);
+        
         StartNodes();
         WaitForTermination();
 //        PrintResults();
