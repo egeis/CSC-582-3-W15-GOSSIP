@@ -56,6 +56,8 @@ public class Node {
     
     private static Thread updateThread = null;
     private static Thread sendThread = null;
+    
+    private static boolean done = false;
     /**
      * Requests the next counter from a global counter server.
      * @return a unique number [LONG].
@@ -112,6 +114,7 @@ public class Node {
                 break;
             case PacketHelper.INIT_SHUTDOWN:
                 shutdown = true;
+                done = true;
                 break;
             default:
         }
@@ -355,7 +358,7 @@ public class Node {
         {
 //            try 
 //            {
-                while(true)
+                while(!done)
                 {
 //                    Thread.sleep(500);
 
