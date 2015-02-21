@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
@@ -220,6 +221,8 @@ public class Node {
     {
         int count = 0;
         
+        LOGGER.info("Waiting for threads...");
+        
         while(count < 2)
         {
             if(!updateThread.isAlive())
@@ -228,6 +231,8 @@ public class Node {
             if(!sendThread.isAlive())
                 count++;
         }
+        
+        LOGGER.info("Both threads are done...");
     }
     
     public static void loadFile(String contents)
@@ -308,8 +313,13 @@ public class Node {
             parsePacket(acceptMessage());
         }
 
-        waitForThreads();
-        sendCompletedMessage();
+        LOGGER.info("Shutting down updates...");
+        try {
+            updateThread.join();
+            sendThread.join();
+        } catch (InterruptedException ex) {
+            LOGGER.log(Level.SEVERE, null, ex);
+        }
         
         LOGGER.info("Shutting down Server...");
         try {
@@ -321,7 +331,7 @@ public class Node {
         System.exit(0);
     }
     
-    public static class Values {
+    public static class Values implements Serializable{
         public long TIME;
         public Integer VALUE;
         public Integer COUNT;
@@ -351,9 +361,6 @@ public class Node {
 
                     Set s = updateQueue.keySet();
                     Object[] keys = s.toArray();
-                    
-                    if(keys.length == 0)
-                        break;
                     
                     for (int i = 0; i < keys.length; i++)
                     {
@@ -385,6 +392,7 @@ public class Node {
                 timer.schedule(new UpdateTask(), N * 1000);
             }
             
+            sendCompletedMessage();
 //            System.exit(0);
         }
     }
