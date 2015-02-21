@@ -65,26 +65,8 @@ public class Node {
      */
     private static long getTime()
     {
-//        long time = 0L;
-        LOGGER.info("Getting a new time.");
+        //LOGGER.info("Getting a new time.");
                 
-//        try { 
-//            Socket socket = new Socket(TIMER_HOST, TIMER_PORT);
-//            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-//            out.writeInt(1);
-//            out.flush();
-//            out.close();
-//            socket.close();
-//            
-//            socket = new Socket(TIMER_HOST, TIMER_PORT);
-//            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-//            time = in.readInt();
-//            in.close();
-//            socket.close();
-//        } catch (IOException ex) {
-//            LOGGER.log(Level.SEVERE, null, ex);
-//        }
-        
         return System.currentTimeMillis();
     }
 
@@ -123,7 +105,7 @@ public class Node {
     
     private static void start()
     {
-        LOGGER.info("Starting Threads.");
+        //LOGGER.info("Starting Threads.");
         updateThread = new Thread(new Updater());
         updateThread.start();
         
@@ -157,7 +139,7 @@ public class Node {
     {
         Socket socket;
         
-        LOGGER.info("Completed!");
+        LOGGER.info("Finished with random updates.");
         
         try {
             socket = new Socket("localhost", 1211);
@@ -196,7 +178,6 @@ public class Node {
             
             os.writeObject(p);
             os.flush();
-//            os.close();
             socket.close();
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, ch.host+":"+ch.port, ex);
@@ -225,7 +206,7 @@ public class Node {
     {
         int count = 0;
         
-        LOGGER.info("Waiting for threads...");
+        //LOGGER.info("Waiting for threads...");
         
         while(count < 2)
         {
@@ -236,7 +217,7 @@ public class Node {
                 count++;
         }
         
-        LOGGER.info("Both threads are done...");
+        //LOGGER.info("Both threads are done...");
     }
     
     public static void loadFile(String contents)
@@ -305,19 +286,21 @@ public class Node {
             LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
         }
            
-        LOGGER.info("Starting Server...");
+        LOGGER.log(Level.INFO, "Initial Database: " + data.toString());
+        
+        //LOGGER.info("Starting Server...");
         try {
             server = new ServerSocket(port);
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, null, ex);
         }
         
-        LOGGER.info("Accepting Packets...");
+        //LOGGER.info("Accepting Packets...");
         while(!shutdown) {
             parsePacket(acceptMessage());
         }
 
-        LOGGER.info("Shutting down updates...");
+        //LOGGER.info("Shutting down updates...");
         try {
             updateThread.join();
             sendThread.join();
@@ -325,12 +308,15 @@ public class Node {
             LOGGER.log(Level.SEVERE, null, ex);
         }
         
-        LOGGER.info("Shutting down Server...");
+        //LOGGER.info("Shutting down Server...");
         try {
             server.close();
         } catch (IOException ex) {
             LOGGER.log(Level.WARNING, null, ex);
         }
+        
+        
+        LOGGER.log(Level.INFO, "Final Database: " + data.toString());
         
         System.exit(0);
     }
@@ -357,32 +343,21 @@ public class Node {
     {
         public void run()
         {
-//            try 
-//            {
-                while(!done)
-                {
-//                    Thread.sleep(500);
-
-                    Set s = updateQueue.keySet();
-                    Object[] keys = s.toArray();
+            while(!done)
+            {
+                Set s = updateQueue.keySet();
+                Object[] keys = s.toArray();
                     
-                    for (int i = 0; i < keys.length; i++)
-                    {
-                        Values v = updateQueue.get(keys[i]);
-                        v.COUNT++;
-                        sendPacket(keys[i].toString(), v);
+                for (int i = 0; i < keys.length; i++)
+                {
+                    Values v = updateQueue.get(keys[i]);
+                    v.COUNT++;
+                    sendPacket(keys[i].toString(), v);
                         
-                        if (v.COUNT == k)
-                        {
-                            updateQueue.remove(keys[i]);
-                        }
-                    }
+                    if (v.COUNT == k)
+                        updateQueue.remove(keys[i]);
                 }
-                
-//                System.exit(0);
-//            } catch (InterruptedException ex) {
-//                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-//            }         
+            }
         }
     }
     
