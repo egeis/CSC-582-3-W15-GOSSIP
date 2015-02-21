@@ -393,6 +393,11 @@ public class Node {
             {
                 Timer timer = new Timer();
                 timer.schedule(new UpdateTask(), N * 1000);
+                try {
+                    Thread.sleep(N*1000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
             
             sendCompletedMessage();
