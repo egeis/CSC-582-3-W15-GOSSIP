@@ -149,11 +149,9 @@ public class Launcher {
                     sb.append(d.getKey()+":"+child.host+":"+child.port+" ");
                 }
                 
-                Random random = new Random();
-
                 int m = 5;
                                 
-                Process node = Runtime.getRuntime().exec("java -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString() );
+                Process node = Runtime.getRuntime().exec("java -Xmx64m -Xms64m -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString() );
                 
                 processes.put(c.id, node);
             } catch (IOException ex) {
@@ -179,14 +177,13 @@ public class Launcher {
                 System.out.println("Creating Node: "+c.host+":"+c.port);
                 socket = new Socket(c.host, c.port);
                 ObjectOutputStream os = new ObjectOutputStream(socket.getOutputStream()); 
-                //Packet p = PacketHelper.getPacket(PacketHelper.SET_START, -1, null);
                 Packet p = PacketHelper.getPacket(PacketHelper.SET_START);
                 
                 System.out.println(p.toString());
                 
                 os.writeObject(p);
                 os.flush();
-                //os.close();
+                os.close();
                 socket.close();
             } catch (IOException ex) {
                 Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, c.host+":"+c.port, ex);
