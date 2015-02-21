@@ -8,14 +8,17 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -59,6 +62,9 @@ public class Node {
     
     private static boolean done = false;
     
+    private static CopyOnWriteArrayList<String> updates = new CopyOnWriteArrayList(); 
+    private static List<String> hotTopics = new ArrayList();
+    
     /**
      * Requests the next counter from a global counter server.
      * @return a unique number [LONG].
@@ -80,6 +86,7 @@ public class Node {
                 if (v == null)
                 {
                     data.put(p.key, p.value);
+                    updates.add("Updated entry at key: " + p.key.toString() + " with value: " + p.value.VALUE + " at " + p.value.TIME);
                     addToUpdateQueue(p.key, p.value);
                 }
                 
@@ -88,6 +95,7 @@ public class Node {
                     if (p.value.TIME > v.TIME)
                     {
                         v.VALUE = p.value.VALUE;
+                        updates.add("Updated entry at key: " + p.key.toString() + " with value: " + v.VALUE + " at " + v.TIME);
                         addToUpdateQueue(p.key, v);
                     }
                 }
@@ -315,7 +323,7 @@ public class Node {
             LOGGER.log(Level.WARNING, null, ex);
         }
         
-        
+        LOGGER.log(Level.INFO, "Here are all the updates for this node: " + updates.toString());
         LOGGER.log(Level.INFO, "Final Database: " + data.toString());
         
         System.exit(0);
@@ -392,6 +400,7 @@ public class Node {
             v.VALUE = (int)(Math.random() * 1000);
             
             data.replace(keys[randomIndex].toString(), v);
+            updates.add("Updated entry at key: " + keys[randomIndex].toString() + " with value: " + v.VALUE + " at " + v.TIME);
             
             addToUpdateQueue(keys[randomIndex].toString(), v);
         }
