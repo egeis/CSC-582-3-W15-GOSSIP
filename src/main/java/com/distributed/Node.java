@@ -58,6 +58,7 @@ public class Node {
     private static Thread sendThread = null;
     
     private static boolean done = false;
+    
     /**
      * Requests the next counter from a global counter server.
      * @return a unique number [LONG].
@@ -136,11 +137,11 @@ public class Node {
             
         try (Socket socket = server.accept()) {
             input = new ObjectInputStream(socket.getInputStream());
-            LOGGER.info("Accepting a Packet @"+System.currentTimeMillis());
+            //LOGGER.info("Accepting a Packet @"+System.currentTimeMillis());
             
             p = (Packet) input.readObject();
             
-            LOGGER.info("Received from node_"+p.id+" Packet:"+p.toString());
+            //LOGGER.info("Received from node_"+p.id+" Packet:"+p.toString());
             
             input.close();
             socket.close();
@@ -389,19 +390,16 @@ public class Node {
     {
         public void run()
         {
-            for (int i = 0; i < Mn; i++)
+            int i = 0;
+            Timer timer = null;
+            
+            for (; i < Mn; i++)
             {
-                Timer timer = new Timer();
-                timer.schedule(new UpdateTask(), N * 1000);
-                try {
-                    Thread.sleep(N*1000);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                timer = new Timer();
+                timer.schedule(new UpdateTask(), (i+1) * N * 1000);
             }
             
-            sendCompletedMessage();
-//            System.exit(0);
+            timer.schedule(new LastTask(), (i+1) * N * 1000);
         }
     }
     
@@ -421,8 +419,14 @@ public class Node {
             data.replace(keys[randomIndex].toString(), v);
             
             addToUpdateQueue(keys[randomIndex].toString(), v);
-            
-//            System.exit(0);
+        }
+    }
+    
+    public static class LastTask extends TimerTask
+    {
+        public void run()
+        {
+            sendCompletedMessage();
         }
     }
 }
