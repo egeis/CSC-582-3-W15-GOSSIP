@@ -104,7 +104,7 @@ public class Node {
                         v.VALUE = p.value.VALUE;
                         
                         statsUpdate.add(new Stats(p.key, p.value.TIME, p.value.VALUE, p.value.COUNT));
-                        //updates.add("Updated entry at key: " + p.key.toString() + " with value: " + v.VALUE + " at " + v.TIME);
+                        updates.add("Updated entry at key: " + p.key.toString() + " with value: " + v.VALUE + " at " + v.TIME);
                         addToUpdateQueue(p.key, v);
                     }
                 }
@@ -332,7 +332,7 @@ public class Node {
             LOGGER.log(Level.WARNING, null, ex);
         }
         
-        //LOGGER.log(Level.INFO, "Here are all the updates for this node: " + updates.toString());
+        LOGGER.log(Level.INFO, "Here are all the updates for this node: " + updates.toString());
         LOGGER.log(Level.INFO, "Final Database: " + data.toString());
         
         StringBuilder sb = new StringBuilder();
@@ -432,7 +432,7 @@ public class Node {
             data.replace(keys[randomIndex].toString(), v);
             
             statsUpdate.add(new Stats(keys[randomIndex].toString(), v.TIME, v.VALUE, v.COUNT));
-            //updates.add("Updated entry at key: " + keys[randomIndex].toString() + " with value: " + v.VALUE + " at " + v.TIME);
+            updates.add("Updated entry at key: " + keys[randomIndex].toString() + " with value: " + v.VALUE + " at " + v.TIME);
             
             addToUpdateQueue(keys[randomIndex].toString(), v);
         }
