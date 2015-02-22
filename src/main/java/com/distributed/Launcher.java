@@ -1,5 +1,6 @@
 package main.java.com.distributed;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -8,9 +9,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -262,59 +264,20 @@ public class Launcher {
         k = 10;
         counterServerPort = 1212;
         
-        /* Handle Arguments First */
-//        if(args.length > 0 && args.length < 5)
-//        {
-//            counterServerPort = Integer.parseInt(args[1]);
-//            resource_path_nodes = args[0];
-//            seconds = Integer.parseInt(args[2]);
-//            k = Integer.parseInt(args[3]);
-//            min = Integer.parseInt(args[4]);
-//            max = Integer.parseInt(args[5]);
-//        }
-//        else if(args.length > 0 && args.length < 3)
-//        {
-//            counterServerPort = Integer.parseInt(args[1]);
-//            resource_path_nodes = args[0];
-//
-//        }
-//        else if(args.length > 0 && args.length < 2)
-//        {
-//            resource_path_nodes = args[0];
-//        }
-                
         try {
             server = new ServerSocket(1211);
         } catch (IOException ex) {
             Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        /* Starting the Counter (incrementer) Server */ 
-//        StartCounterServer();
+        new File("./results/updates").mkdirs();
+        new File("./results/database").mkdirs();
+        new File("./logs/").mkdirs();
         
-//        Process CounterServer;
-//        try {
-//            System.out.println("Starting Counter Server");
-//            CounterServer = Runtime.getRuntime().exec("java -cp "+getPath()+" main.java.com.distributed " + counterServerPort);
-//            boolean started = CounterServer.isAlive();
-//            
-//            if(started) {
-//                System.out.println("Counter Server Started:"+started);
-//            } else {
-//                System.out.println("Counter Server Started:"+started);
-//                System.out.println("Unable to contine...");
-//                System.exit(1);
-//            }
-//            
-//        } catch (IOException ex) {
-//            Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);        
-//        } 
-               
         LoadConfiguration(resource_path_nodes);
         
         StartNodes();
         WaitForTermination();
-//        PrintResults();
         ShutdownNodes();
     }
 }

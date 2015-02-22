@@ -1,21 +1,16 @@
 package main.java.com.distributed;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,17 +62,7 @@ public class Node {
     
     private static CopyOnWriteArrayList<String> updates = new CopyOnWriteArrayList(); 
     private static List<String> hotTopics = new ArrayList();
-    
-    /**
-     * Requests the next counter from a global counter server.
-     * @return a unique number [LONG].
-     */
-    private static long getTime()
-    {
-        //LOGGER.info("Getting a new time.");
-                
-        return System.currentTimeMillis();
-    }
+  
 
     private static void parsePacket(Packet p)
     {                
@@ -90,10 +75,11 @@ public class Node {
                 {
                     data.put(p.key, p.value);
                     
-                    //String key, long time, Integer value)
-                    statsUpdate.add(new Stats(p.key, p.value.TIME, p.value.VALUE, p.value.COUNT));
+                    //public Stats(String key, long time, Integer value, Integer count)
+                    statsUpdate.add(new Stats(p.key, System.currentTimeMillis(), p.value.VALUE, p.value.COUNT));
                     
-                    updates.add("Updated entry at key: " + p.key.toString() + " with value: " + p.value.VALUE + " at " + p.value.TIME);
+                    updates.add("Updated: " + p.key.toString() + " with value: " + p.value.VALUE + " at " + p.value.TIME);
+                    
                     addToUpdateQueue(p.key, p.value);
                 }
                 
@@ -102,9 +88,13 @@ public class Node {
                     if (p.value.TIME > v.TIME)
                     {
                         v.VALUE = p.value.VALUE;
+                        v.TIME = p.value.TIME;
                         
-                        statsUpdate.add(new Stats(p.key, p.value.TIME, p.value.VALUE, p.value.COUNT));
-                        updates.add("Updated entry at key: " + p.key.toString() + " with value: " + v.VALUE + " at " + v.TIME);
+                        //public Stats(String key, long time, Integer value, Integer count)
+                        statsUpdate.add(new Stats(p.key, System.currentTimeMillis(), p.value.VALUE, p.value.COUNT));
+                        
+                        updates.add("Updated: " + p.key.toString() + " with value: " + v.VALUE + " at " + v.TIME);
+                        
                         addToUpdateQueue(p.key, v);
                     }
                 }
@@ -136,11 +126,8 @@ public class Node {
             
         try (Socket socket = server.accept()) {
             input = new ObjectInputStream(socket.getInputStream());
-            //LOGGER.info("Accepting a Packet @"+System.currentTimeMillis());
             
             p = (Packet) input.readObject();
-            
-            //LOGGER.info("Received from node_"+p.id+" Packet:"+p.toString());
             
             input.close();
             socket.close();
@@ -222,9 +209,7 @@ public class Node {
     public static void waitForThreads()
     {
         int count = 0;
-        
-        //LOGGER.info("Waiting for threads...");
-        
+                
         while(count < 2)
         {
             if(!updateThread.isAlive())
@@ -233,10 +218,12 @@ public class Node {
             if(!sendThread.isAlive())
                 count++;
         }
-        
-        //LOGGER.info("Both threads are done...");
     }
     
+    /**
+     * Parses String into the Database Hash-map.
+     * @param contents 
+     */
     public static void loadFile(String contents)
     {
         String[] records = contents.split(System.getProperty("line.separator"));
@@ -249,6 +236,10 @@ public class Node {
         }
     }
     
+    /**
+     * Main Method
+     * @param args 
+     */
     public static void main(String[] args)
     {
         port = 0;
@@ -293,7 +284,7 @@ public class Node {
         // LOG FILES MUST BE UNIQUE PER NODE INSTANCE 
         FileHandler fh;
         try {
-            fh = new FileHandler(Node.class.getName()+"_"+id+"_"+host+"-"+port+".log");
+            fh = new FileHandler("./logs/"+Node.class.getName()+"_"+id+"_"+host+"-"+port+".log");
             LOGGER.addHandler(fh);
             SimpleFormatter frmt = new SimpleFormatter();
             fh.setFormatter(frmt);
@@ -332,18 +323,24 @@ public class Node {
             LOGGER.log(Level.WARNING, null, ex);
         }
         
-        LOGGER.log(Level.INFO, "Here are all the updates for this node: " + updates.toString());
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < updates.size(); i++)
+        {
+            String s = updates.get(i);
+            sb.append(s+System.getProperty("line.separator"));
+        }
+        
+        LOGGER.log(Level.INFO, "Here are all the updates for this node: " + sb.toString());
         LOGGER.log(Level.INFO, "Final Database: " + data.toString());
         
-        StringBuilder sb = new StringBuilder();
+        sb = new StringBuilder();
         for(int i = 0; i < statsUpdate.size(); i++)
         {
             Stats s = statsUpdate.get(i);
-            sb.append(s.KEY+","+s.VALUE+","+s.COUNT+","+s.TIME+","+s.CREATED+System.getProperty("line.separator"));
+            sb.append(s.KEY+","+s.VALUE+","+s.COUNT+","+s.TIME+System.getProperty("line.separator"));
         }
         
         FileIO.WriteFile("./results/updates/"+id.toString(), sb.toString());
-        
         
         sb = new StringBuilder();
         Set s = data.keySet();
@@ -426,13 +423,14 @@ public class Node {
             int randomIndex = (int)(Math.random() * (keys.length - 1));
             
             Values v = data.get(keys[randomIndex]);
-            v.TIME = getTime();
+            v.TIME = System.currentTimeMillis();
             v.VALUE = (int)(Math.random() * 1000);
             
             data.replace(keys[randomIndex].toString(), v);
             
+            //public Stats(String key, long time, Integer value, Integer count)
             statsUpdate.add(new Stats(keys[randomIndex].toString(), v.TIME, v.VALUE, v.COUNT));
-            updates.add("Updated entry at key: " + keys[randomIndex].toString() + " with value: " + v.VALUE + " at " + v.TIME);
+            updates.add("Updated: " + keys[randomIndex].toString() + " with value: " + v.VALUE + " at " + v.TIME);
             
             addToUpdateQueue(keys[randomIndex].toString(), v);
         }
@@ -451,7 +449,6 @@ public class Node {
         public Integer VALUE;
         public Integer COUNT;
         public String KEY;
-        public final long CREATED = System.currentTimeMillis();
   
         public Stats(String key, long time, Integer value, Integer count)
         {
@@ -463,7 +460,7 @@ public class Node {
 
         @Override
         public String toString() {
-            return "Values{KEY:"+KEY+", TIME=" + TIME + ", VALUE=" + VALUE + ", COUNT=" + COUNT + ", Created:"+CREATED+"}";
+            return "Values{KEY:"+KEY+", TIME=" + TIME + ", VALUE=" + VALUE + ", COUNT=" + COUNT +"}";
         }        
     }
  }
