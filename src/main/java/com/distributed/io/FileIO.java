@@ -24,7 +24,7 @@ public class FileIO {
     public static void WriteFile(String id, String contents)
     {
         try {
-            Files.write(Paths.get("./"+id.toString()+"-results.txt"), contents.getBytes());
+            Files.write(Paths.get(id.toString()+"-results.txt"), contents.getBytes());
         } catch(IOException ex) {
             Logger.getLogger(FileIO.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -342,7 +342,7 @@ public class Node {
             sb.append(s.KEY+","+s.VALUE+","+s.COUNT+","+s.TIME+","+s.CREATED+System.getProperty("line.separator"));
         }
         
-        FileIO.WriteFile(id.toString(), sb.toString());
+        FileIO.WriteFile("./results/updates/"+id.toString(), sb.toString());
         
         
         sb = new StringBuilder();
@@ -354,7 +354,7 @@ public class Node {
             sb.append(keys[i].toString()+","+v.VALUE+","+v.COUNT+","+v.TIME+System.getProperty("line.separator"));
         }
         
-        FileIO.WriteFile(id.toString()+"-database", sb.toString());
+        FileIO.WriteFile("./results/database/"+id.toString()+"-database", sb.toString());
         
         System.exit(0);
     }
