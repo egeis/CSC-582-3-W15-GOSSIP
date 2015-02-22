@@ -8,6 +8,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -62,6 +63,8 @@ public class Node {
     
     private static boolean done = false;
     
+    private static CopyOnWriteArrayList<Stats> statsUpdate = new CopyOnWriteArrayList(); 
+    
     private static CopyOnWriteArrayList<String> updates = new CopyOnWriteArrayList(); 
     private static List<String> hotTopics = new ArrayList();
     
@@ -86,6 +89,10 @@ public class Node {
                 if (v == null)
                 {
                     data.put(p.key, p.value);
+                    
+                    //String key, long time, Integer value)
+                    statsUpdate.add(new Stats(p.key, p.value.TIME, p.value.VALUE, p.value.COUNT));
+                    
                     updates.add("Updated entry at key: " + p.key.toString() + " with value: " + p.value.VALUE + " at " + p.value.TIME);
                     addToUpdateQueue(p.key, p.value);
                 }
@@ -95,6 +102,8 @@ public class Node {
                     if (p.value.TIME > v.TIME)
                     {
                         v.VALUE = p.value.VALUE;
+                        
+                        statsUpdate.add(new Stats(p.key, p.value.TIME, p.value.VALUE, p.value.COUNT));
                         updates.add("Updated entry at key: " + p.key.toString() + " with value: " + v.VALUE + " at " + v.TIME);
                         addToUpdateQueue(p.key, v);
                     }
@@ -326,6 +335,27 @@ public class Node {
         LOGGER.log(Level.INFO, "Here are all the updates for this node: " + updates.toString());
         LOGGER.log(Level.INFO, "Final Database: " + data.toString());
         
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < statsUpdate.size(); i++)
+        {
+            Stats s = statsUpdate.get(i);
+            sb.append(s.KEY+","+s.VALUE+","+s.COUNT+","+s.TIME+","+s.CREATED+System.getProperty("line.separator"));
+        }
+        
+        FileIO.WriteFile(id.toString(), sb.toString());
+        
+        
+        sb = new StringBuilder();
+        Set s = data.keySet();
+        Object[] keys = s.toArray();
+        for (int i = 0; i < keys.length; i++)
+        {
+            Values v = data.get(keys[i]);
+            sb.append(keys[i].toString()+","+v.VALUE+","+v.COUNT+","+v.TIME+System.getProperty("line.separator"));
+        }
+        
+        FileIO.WriteFile(id.toString()+"-database", sb.toString());
+        
         System.exit(0);
     }
     
@@ -333,7 +363,7 @@ public class Node {
         public long TIME;
         public Integer VALUE;
         public Integer COUNT;
-        
+  
         public Values(long time, Integer value)
         {
             this.TIME = time;
@@ -343,7 +373,7 @@ public class Node {
 
         @Override
         public String toString() {
-            return "Values{" + "TIME=" + TIME + ", VALUE=" + VALUE + ", COUNT=" + COUNT + "}";
+            return "Values{TIME=" + TIME + ", VALUE=" + VALUE + ", COUNT=" + COUNT + "}";
         }        
     }
     
@@ -400,6 +430,8 @@ public class Node {
             v.VALUE = (int)(Math.random() * 1000);
             
             data.replace(keys[randomIndex].toString(), v);
+            
+            statsUpdate.add(new Stats(keys[randomIndex].toString(), v.TIME, v.VALUE, v.COUNT));
             updates.add("Updated entry at key: " + keys[randomIndex].toString() + " with value: " + v.VALUE + " at " + v.TIME);
             
             addToUpdateQueue(keys[randomIndex].toString(), v);
@@ -413,4 +445,25 @@ public class Node {
             sendCompletedMessage();
         }
     }
-}
+    
+    public static class Stats implements Serializable{
+        public long TIME;
+        public Integer VALUE;
+        public Integer COUNT;
+        public String KEY;
+        public final long CREATED = System.currentTimeMillis();
+  
+        public Stats(String key, long time, Integer value, Integer count)
+        {
+            this.TIME = time;
+            this.KEY = key;
+            this.VALUE = value;
+            this.COUNT = count;
+        }
+
+        @Override
+        public String toString() {
+            return "Values{KEY:"+KEY+", TIME=" + TIME + ", VALUE=" + VALUE + ", COUNT=" + COUNT + ", Created:"+CREATED+"}";
+        }        
+    }
+ }

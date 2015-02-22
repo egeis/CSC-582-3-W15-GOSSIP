@@ -21,10 +21,10 @@ public class FileIO {
      * @param filename to be written to.
      * @param contents of file to be written.
      */
-    public static void WriteFile(String filename, String contents)
+    public static void WriteFile(String id, String contents)
     {
         try {
-            Files.write(Paths.get("./"+filename+".txt"), contents.getBytes());
+            Files.write(Paths.get("./"+id.toString()+"-results.txt"), contents.getBytes());
         } catch(IOException ex) {
             Logger.getLogger(FileIO.class.getName()).log(Level.SEVERE, null, ex);
         }
