@@ -401,13 +401,14 @@ public class Node {
         public void run()
         {
             int i = 0;
-            Timer timer = null;
+            Timer timer = new Timer();
             
+            LOGGER.info("Start Updating");
             for (; i < Mn; i++)
             {
-                timer = new Timer();
                 timer.schedule(new UpdateTask(), (i+1) * N * 1000);
             }
+            LOGGER.info("End Updating");
             
             timer.schedule(new LastTask(), (i+1) * N * 1000);
         }

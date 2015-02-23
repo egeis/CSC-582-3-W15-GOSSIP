@@ -151,7 +151,10 @@ public class Launcher {
                     sb.append(d.getKey()+":"+child.host+":"+child.port+" ");
                 }
                 
-                int m = 5;
+                int m = 0;
+                
+                if(entry.getKey() == 1)                    
+                m = 1;
                                 
                 Process node = Runtime.getRuntime().exec("java -Xmx64m -Xms64m -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString() );
                 
@@ -200,6 +203,12 @@ public class Launcher {
      */
     private static void ShutdownNodes()
     {
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Launcher.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
         /*Send the Start Command*/
         for(Map.Entry<Integer, Conn> entry : network.entrySet())
         {
@@ -261,7 +270,7 @@ public class Launcher {
         /* Set Defaults */
         String resource_path_nodes = "main/resources/nodes.json";
         seconds = 1;
-        k = 10;
+        k = 5;
         counterServerPort = 1212;
         
         try {
