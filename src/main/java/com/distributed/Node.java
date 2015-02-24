@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -171,7 +172,10 @@ public class Node {
         Set s = adjacent.keySet();
         Object[] keys = s.toArray();
             
-        int randomIndex = (int)(Math.random() * (keys.length - 1));
+        Random rand = new Random();
+        int randomIndex  = rand.nextInt(keys.length);
+        
+        ///int randomIndex = (int)(Math.random() * (keys.length - 1));
             
         Conn.Child ch = adjacent.get(keys[randomIndex]);
         Socket socket;
@@ -179,7 +183,7 @@ public class Node {
         try {
             socket = new Socket(ch.host, ch.port);
             ObjectOutputStream os = new ObjectOutputStream(socket.getOutputStream()); 
-            
+            LOGGER.log(Level.INFO, "Sending out an update to " + ch.port);
             os.writeObject(p);
             os.flush();
             socket.close();

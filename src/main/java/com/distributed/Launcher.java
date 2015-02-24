@@ -153,7 +153,7 @@ public class Launcher {
                 
                 int m = 0;
                 
-                if(entry.getKey() == 1)                    
+                if(entry.getKey() == 25)                    
                 m = 1;
                                 
                 Process node = Runtime.getRuntime().exec("java -Xmx64m -Xms64m -cp "+getPath()+" main.java.com.distributed.Node "+k+" "+m+" "+seconds+" "+sb.toString() );
